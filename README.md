@@ -1,6 +1,6 @@
-# react-native-ble-printer
+# React Native Ble Printer
 
-Print in thermal printer bluetooth
+Print in bluetooth printer/thermal printer ESC POS
 
 ## Installation
 
@@ -8,8 +8,13 @@ Print in thermal printer bluetooth
 npm install react-native-ble-printer
 ```
 
-## Usage
+or
 
+```sh
+yarn add react-native-ble-printer
+```
+
+## Usage
 
 ```js
 import { multiply } from 'react-native-ble-printer';
@@ -18,7 +23,6 @@ import { multiply } from 'react-native-ble-printer';
 
 const result = await multiply(3, 7);
 ```
-
 
 ## Contributing
 
