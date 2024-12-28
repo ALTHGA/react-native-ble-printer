@@ -1,41 +1,88 @@
 import BlePrinter from 'react-native-ble-printer';
 export async function printReceipt() {
-  BlePrinter.printLines(2);
-  BlePrinter.printText('BUSINESS NAME', {
-    size: 40,
+  const summaryDateFormatted = Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium',
+  }).format(new Date());
+
+  await BlePrinter.printText('ArcadeX', {
+    align: 'CENTER',
+    size: 50,
     bold: true,
-    align: 'CENTER',
   });
-  BlePrinter.printLines(2);
-  BlePrinter.printText('1234 Main Street\nSuite 567', { align: 'CENTER' });
-  BlePrinter.printText('City Name, State 54321\n123-456-7890', {
-    align: 'CENTER',
-  });
-  BlePrinter.printUnderline();
-  BlePrinter.printColumns('Lorem ipsum', '$1.25');
-  BlePrinter.printColumns('Dolor sit amet', '$7.25');
-  BlePrinter.printColumns('Consectetur', '$26.75');
-  BlePrinter.printColumns('Adipiscing elit', '$15.49');
-  BlePrinter.printColumns('Sed semper', '$18.79');
-  BlePrinter.printColumns('Accumsan ante', '$42.99');
-  BlePrinter.printColumns('Non laoreet', '$9.99');
-  BlePrinter.printColumns('Dui dapibus eu', '$27.50');
-  BlePrinter.printLines(2);
-  BlePrinter.printColumns('Sub Total', '$150.70');
-  BlePrinter.printColumns('Sales tax', '$5.29');
-  BlePrinter.printUnderline();
-  BlePrinter.printColumns('TOTAL', '$155.99', { bold: true, size: 30 });
-  BlePrinter.printUnderline();
-  BlePrinter.printColumns('Paid By:', 'Credit');
-  BlePrinter.printLines(2);
-  BlePrinter.printText('26/12/2024 11:09 PM');
-  BlePrinter.printText('Transaction ID: 234-567890');
-  BlePrinter.printText('Vendor ID: 987654-321');
-  BlePrinter.printLines(3);
-  BlePrinter.printText('THANK YOU FOR SUPPORTING\nLOCAL BUSINESS', {
-    align: 'CENTER',
-    bold: true,
-    size: 27,
-  });
-  BlePrinter.printLines(5);
+  await BlePrinter.printSpace(1);
+  await BlePrinter.printText('Ponto: Bar do Montanha');
+  await BlePrinter.printText('Rota: São Paulo');
+  await BlePrinter.printText(
+    'Emissão: ' +
+      Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date())
+  );
+
+  await BlePrinter.printText('Data: ' + summaryDateFormatted);
+
+  await BlePrinter.printSpace(0);
+  await BlePrinter.printStroke(20, 5, [10, 5]);
+  await BlePrinter.printSpace(0);
+  for (let i = 0; i < [0, 1].length; i++) {
+    const entryTotal = Math.floor(Math.random() + 1000);
+    const paymentTotal = Math.floor(Math.random() + 1000);
+
+    const percentage = 50;
+
+    await BlePrinter.printTwoColumns('Halloween', `${percentage}%`, {
+      bold: true,
+      size: 30,
+    });
+
+    await BlePrinter.printStroke(20, 3);
+    await BlePrinter.printColumns(
+      ['ENTRADA', 'ATUAL', 'ANTERIOR'],
+      [124, 124, 124],
+      ['LEFT', 'RIGHT', 'RIGHT'],
+      { size: 20, bold: true }
+    );
+    await BlePrinter.printStroke(20, 3);
+    await BlePrinter.printColumns(
+      [entryTotal.toString(), entryTotal.toString()],
+      [250, 124],
+      ['RIGHT', 'RIGHT']
+    );
+    await BlePrinter.printText(entryTotal.toFixed(0), { align: 'RIGHT' });
+    await BlePrinter.printStroke(20, 3);
+
+    await BlePrinter.printColumns(
+      ['SAÍDA', 'ATUAL', 'ANTERIOR'],
+      [124, 124, 124],
+      ['LEFT', 'RIGHT', 'RIGHT'],
+      { size: 20, bold: true }
+    );
+    await BlePrinter.printStroke(20, 3);
+    await BlePrinter.printColumns(
+      [paymentTotal.toString(), paymentTotal.toString()],
+      [250, 124],
+      ['RIGHT', 'RIGHT']
+    );
+
+    await BlePrinter.printText(entryTotal.toFixed(0), { align: 'RIGHT' });
+    await BlePrinter.printStroke(20, 3);
+    await BlePrinter.printColumns(
+      ['TOTAL', 'SALDO', 'COMISSÃO'],
+      [124, 124, 124],
+      ['LEFT', 'RIGHT', 'RIGHT'],
+      { size: 20, bold: true }
+    );
+    await BlePrinter.printStroke(20, 3);
+    await BlePrinter.printColumns(
+      ['1000', '432', '432'],
+      [124, 124, 124],
+      ['LEFT', 'RIGHT', 'RIGHT']
+    );
+
+    await BlePrinter.printSpace(0);
+    await BlePrinter.printStroke(20, 5, [10, 5]);
+  }
+
+  await BlePrinter.printTwoColumns('T.ENTRADA..', (2321).toFixed(0));
+  await BlePrinter.printTwoColumns('T.SAIDA..', (32143).toFixed(0));
+
+  await BlePrinter.printSpace(5);
 }

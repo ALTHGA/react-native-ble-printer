@@ -5,6 +5,7 @@ import {
   Platform,
 } from 'react-native';
 import { BLE_PRINTER_EVENTS } from './enums/ble-printer-events';
+import type { Align } from './models/align.identify';
 import type { Device } from './models/device.identify';
 import type { PrintOptions } from './models/print.identify';
 
@@ -35,12 +36,16 @@ function scanDevices(): Promise<void> {
   return BlePrinter.scanDevices();
 }
 
-function printUnderline(): Promise<void> {
-  return BlePrinter.printUnderline();
+function printStroke(
+  strokeHeight: number = 20,
+  strokeWidth: number = 5,
+  strokeDash?: number[]
+): Promise<void> {
+  return BlePrinter.printStroke(strokeHeight, strokeWidth, strokeDash);
 }
 
-function printLines(lines: number): Promise<void> {
-  return BlePrinter.printLines(lines);
+function printSpace(spacing: number): Promise<void> {
+  return BlePrinter.printSpace(spacing);
 }
 
 function printText(text: string, options = {} as PrintOptions): Promise<void> {
@@ -48,13 +53,23 @@ function printText(text: string, options = {} as PrintOptions): Promise<void> {
   return BlePrinter.printText(text, bold, align, size);
 }
 
-function printColumns(
+function printTwoColumns(
   leftText: string,
   rightText: string,
   options = {} as Omit<PrintOptions, 'align'>
 ): Promise<void> {
   const { bold = false, size = 24 } = options;
-  return BlePrinter.printColumns(leftText, rightText, bold, size);
+  return BlePrinter.printTwoColumns(leftText, rightText, bold, size);
+}
+
+function printColumns(
+  texts: string[],
+  columnWidths: number[],
+  alignments: Align[],
+  options = {} as Omit<PrintOptions, 'align'>
+) {
+  const { bold = false, size = 24 } = options;
+  return BlePrinter.printColumns(texts, columnWidths, alignments, bold, size);
 }
 
 function connect(address: string): Promise<void> {
@@ -98,9 +113,10 @@ export default {
   disconnect,
   scanDevices,
   printText,
-  printLines,
-  printUnderline,
   printColumns,
+  printSpace,
+  printStroke,
+  printTwoColumns,
   onDeviceFound,
   onDiscoveryFinished,
   onDevicePaired,

@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import BlePrinter, { type Device } from 'react-native-ble-printer';
 import { DeviceItem } from './components/DeviceItem';
-import { printReceipt } from './services/printReceipt';
 
 export default function App() {
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
@@ -20,7 +19,7 @@ export default function App() {
 
   async function handlePrintReceipt() {
     try {
-      await printReceipt();
+      await BlePrinter.printText('Hello world!');
     } catch (error) {
       console.log(error);
     }
@@ -35,14 +34,16 @@ export default function App() {
     }
 
     setScanning(true);
-    setFoundDevices([]);
-    setPairedDevices([]);
-    await BlePrinter.scanDevices();
-  }
 
-  const handleFinishedDiscovery = () => {
+    try {
+      setFoundDevices([]);
+      setPairedDevices([]);
+      await BlePrinter.scanDevices();
+    } catch (error) {
+      console.log(error);
+    }
     setScanning(false);
-  };
+  }
 
   const handleDeviceFounds = (device: Device) => {
     setFoundDevices((oldDevices) => [...oldDevices, device]);
@@ -57,7 +58,6 @@ export default function App() {
 
     listeners.push(BlePrinter.onDeviceFound(handleDeviceFounds));
     listeners.push(BlePrinter.onDevicePaired(handleDevicePaired));
-    listeners.push(BlePrinter.onDiscoveryFinished(handleFinishedDiscovery));
 
     return () => {
       for (var listener of listeners) {

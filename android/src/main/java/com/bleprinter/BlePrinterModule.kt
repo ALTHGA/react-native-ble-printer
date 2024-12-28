@@ -13,12 +13,15 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContext.RCTDeviceEventEmitter
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.ReadableArray
 import org.json.JSONObject
 import java.io.OutputStream
 import java.util.Collections
@@ -35,6 +38,7 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
   private val EVENT_FOUND_DEVICES = "EVENT_FOUND_DEVICES"
   private val EVENT_PAIRED_DEVICES = "EVENT_PAIRED_DEVICES"
   private val EVENT_DISCOVERY_FINISHED = "EVENT_DISCOVERY_FINISHED"
+  private var promiseScan: Promise? = null
 
   private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
@@ -58,7 +62,6 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
 
     return bleAdapter
   }
-
 
   @ReactMethod
   fun bluetoothIsEnabled(promise: Promise) {
@@ -114,6 +117,8 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  @SuppressLint("MissingPermission")
+  @RequiresApi(Build.VERSION_CODES.ECLAIR)
   @ReactMethod
   fun scanDevices(promise: Promise) {
     val checkBluetoothScanPermission = ActivityCompat.checkSelfPermission(
@@ -135,10 +140,7 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
 
     val bleAdapter = getAdapter()
     try {
-      if (bleAdapter != null && bleAdapter.isDiscovering) {
-        bleAdapter.cancelDiscovery()
-        return
-      }
+      stopScan()
 
 
       val pairedDevices = bleAdapter?.bondedDevices
@@ -151,8 +153,19 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
 
       devices.clear()
       bleAdapter?.startDiscovery()
+      promiseScan = promise
     } catch (e: Exception) {
       promise.reject("SCAN", e.message)
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.ECLAIR)
+  @SuppressLint("MissingPermission")
+  fun stopScan() {
+    val bleAdapter = getAdapter()
+    if (bleAdapter != null && bleAdapter.isDiscovering) {
+      bleAdapter.cancelDiscovery()
+      return
     }
   }
 
@@ -176,10 +189,11 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun printUnderline(promise: Promise) {
+  fun printStroke(strokeHeight: Int = 20, strokeWidth: Float = 5f , strokeDash: ReadableArray? = null, promise: Promise) {
     val stream = getStream()
     try {
-      stream?.write(Utils().line())
+      val dash = if(strokeDash != null) FloatArray(strokeDash.size()) { strokeDash.getInt(it).toFloat() } else null
+      stream?.write(Utils().createStyledStrokeBitmap(strokeHeight, strokeWidth, dash))
       promise.resolve("Print Underline")
     } catch (e: Exception) {
       promise.reject("PrintError", e.message)
@@ -198,13 +212,11 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun printLines(lines: Int, promise: Promise) {
+  fun printSpace(lines: Int, promise: Promise) {
     val stream = getStream()
     try {
-      var n = 1;
-      while (n < lines) {
-        n++
-        stream?.write(byteArrayOf(0x0A))
+      for (i in 0..lines) {
+        stream?.write("\n".toByteArray())
       }
 
       promise.resolve("PRINTED LINES")
@@ -213,31 +225,33 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
     }
   }
 
-
   @ReactMethod
-  fun printColumns(
+  fun printTwoColumns(
     leftText: String,
     rightText: String,
     bold: Boolean = false,
     size: Float = 24f,
     promise: Promise
   ) {
-    val paint = Paint().apply {
-      textSize = size // Tamanho da fonte
-      typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT // Fonte padrão
-    }
-    val leftWidth = paint.measureText(leftText)
-    val rightWidth = paint.measureText(rightText)
-
-    // Calcula o espaço disponível entre os textos
-    val totalSpace = 374 - (leftWidth + rightWidth)
-
-    // Adiciona espaços entre os textos
-    val spaces = " ".repeat((totalSpace / paint.measureText(" ")).toInt())
-    val line = "$leftText$spaces$rightText"
-
-    printText(line, bold = bold, size = size, promise = promise)
+    val text = Utils().twoColumns(leftText, rightText, bold, size)
+    printText(text, bold = bold, size = size, promise = promise)
   }
+
+  @ReactMethod
+  fun printColumns(texts: ReadableArray, columnWidths: ReadableArray, alignments: ReadableArray, bold: Boolean = false, textSize: Float = 24f, promise: Promise) {
+    val textList = Array(texts.size()) { texts.getString(it) ?: "" }
+    val columnWidthList = Array(columnWidths.size()) { columnWidths.getInt(it) }
+    val alignmentList = Array(alignments.size()) { alignments.getString(it) ?: "LEFT" }
+    val columnBitmap = Utils().createColumnTextBitmap(textList, columnWidthList, alignmentList, bold, textSize)
+    val stream = getStream()
+    try {
+      stream?.write(columnBitmap)
+      promise.resolve("Printed Text")
+    } catch (e: Exception) {
+      promise.resolve(e.message)
+    }
+  }
+
 
   private val receiver = object : BroadcastReceiver() {
 
@@ -264,6 +278,7 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
         }
 
         BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+          promiseScan?.resolve("SCAN")
           reactEmitEvent(EVENT_DISCOVERY_FINISHED)
         }
       }

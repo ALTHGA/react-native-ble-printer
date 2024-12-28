@@ -3,9 +3,11 @@ package com.bleprinter
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.icu.text.ListFormatter.Width
 import com.bleprinter.enums.Align
 import kotlin.experimental.or
 
@@ -13,24 +15,37 @@ public class Utils {
 
   private val PAPER_WIDTH = 384f
 
-  public fun createTextBitmap(
-    text: String,
-    align: String,
+  private fun getPaint(
+    align: String? = null,
     bold: Boolean = false,
-    fontSize: Float = 24f,
-  ): ByteArray {
+    fontSize: Float = 24f
+  ): Paint {
     val paint = Paint().apply {
       color = Color.BLACK
       textSize = fontSize
       isAntiAlias = true
       typeface =
         if (bold) Typeface.create(Typeface.DEFAULT, Typeface.BOLD) else Typeface.DEFAULT
-      textAlign = when (align) {
+    }
+
+    if(align != null) {
+      paint.textAlign = when (align) {
         "CENTER" -> Paint.Align.CENTER
         "RIGHT" -> Paint.Align.RIGHT
         else -> Paint.Align.LEFT
       }
     }
+
+    return paint
+  }
+
+  public fun createTextBitmap(
+    text: String,
+    align: String,
+    bold: Boolean = false,
+    fontSize: Float = 24f,
+  ): ByteArray {
+    val paint = getPaint(align, bold, fontSize)
 
     // Split text into lines
     val wrappedLines = text.split("\n").flatMap { line ->
@@ -38,7 +53,8 @@ public class Utils {
     }
 
     val fontMetrics = paint.fontMetrics
-    val lineHeight = (fontMetrics.descent - fontMetrics.ascent + fontMetrics.leading).toInt() // Adjust line spacing
+    val lineHeight =
+      (fontMetrics.descent - fontMetrics.ascent + fontMetrics.leading).toInt() // Adjust line spacing
 
     // Calculate total bitmap height
     val totalHeight = lineHeight * wrappedLines.size
@@ -50,7 +66,8 @@ public class Utils {
 
     // Draw text on canvas
     for ((index, line) in wrappedLines.withIndex()) {
-      val yPos = ((index + 1) * lineHeight - fontMetrics.descent).toFloat() // Ajustar posição para descida
+      val yPos =
+        ((index + 1) * lineHeight - fontMetrics.descent).toFloat() // Ajustar posição para descida
       val xPos = when (align) {
         "CENTER" -> PAPER_WIDTH / 2f
         "RIGHT" -> PAPER_WIDTH - 10f
@@ -62,26 +79,77 @@ public class Utils {
     return convertBitmapToPrinterArray(bitmap)
   }
 
-  fun line(): ByteArray {
+  fun createColumnTextBitmap(
+    texts: Array<String>,
+    widths: Array<Int>,
+    alignments: Array<String>,
+    bold: Boolean,
+    size: Float
+  ): ByteArray {
+    val paint = getPaint(bold = bold, fontSize = size)
 
-    val paint = Paint().apply {
-      color = Color.BLACK
-      strokeWidth = 5f
-      isAntiAlias = true
+    if (texts.size != widths.size || texts.size != alignments.size) {
+      throw IllegalArgumentException("texts, widths, and alignments must have the same size.")
     }
 
-    val width = 384
-    val height = 50
+    // Calculate the total height required for the text
+    val lineHeight = paint.fontMetrics.bottom - paint.fontMetrics.top
+    val bitmapHeight = lineHeight.toInt()
 
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    // Create a bitmap with the correct paper width and calculated height
+    val bitmap = Bitmap.createBitmap(PAPER_WIDTH.toInt(), bitmapHeight, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
+    canvas.drawColor(Color.WHITE) // Background color
 
-    val startX = 0f
-    val stopX = width.toFloat()
-    val yPosition = height / 2f
+    // Draw each column
+    var xOffset = 0
+    for (i in texts.indices) {
+      val text = texts[i]
+      val width = widths[i]
+      val alignment = alignments[i].uppercase()
 
-    canvas.drawColor(Color.WHITE)
-    canvas.drawLine(startX, yPosition, stopX, yPosition, paint)
+      val textWidth = paint.measureText(text)
+      val adjustedText = when {
+        textWidth > width -> text.substring(0, paint.breakText(text, true, width.toFloat(), null))
+        else -> text
+      }
+
+      val xPosition = when (alignment) {
+        "LEFT" -> xOffset
+        "RIGHT" -> xOffset + (width - textWidth).toInt()
+        "CENTER" -> xOffset + ((width - textWidth) / 2).toInt()
+        else -> throw IllegalArgumentException("Invalid alignment: $alignment")
+      }
+
+      // Draw text
+      canvas.drawText(adjustedText, xPosition.toFloat(), -paint.fontMetrics.top, paint)
+      xOffset += width // Move to the next column
+    }
+
+    return convertBitmapToPrinterArray(bitmap)
+  }
+
+  fun createStyledStrokeBitmap(
+    strokeHeight: Int,
+    strokeWidth: Float,
+    dashPattern: FloatArray? = null
+  ): ByteArray {
+    val bitmap = Bitmap.createBitmap(PAPER_WIDTH.toInt(), strokeHeight, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.drawColor(Color.WHITE) // Background color
+
+    // Draw the styled stroke
+    drawStyledStroke(
+      canvas = canvas,
+      startX = 0f,
+      startY = strokeHeight / 2f,
+      endX = PAPER_WIDTH,
+      endY = strokeHeight / 2f,
+      strokeWidth = strokeWidth,
+      strokeColor = Color.BLACK,
+      dashPattern = dashPattern
+    )
+
     return convertBitmapToPrinterArray(bitmap)
   }
 
@@ -133,5 +201,48 @@ public class Utils {
     }
 
     return lines
+  }
+
+  fun twoColumns(
+    leftText: String,
+    rightText: String,
+    bold: Boolean = false,
+    size: Float = 24f
+  ): String {
+    val paint = getPaint(bold = bold, fontSize = size)
+    val leftWidth = paint.measureText(leftText)
+    val rightWidth = paint.measureText(rightText)
+
+    // Calcula o espaço disponível entre os textos
+    val totalSpace = 374 - (leftWidth + rightWidth)
+
+    // Adiciona espaços entre os textos
+    val spaces = " ".repeat((totalSpace / paint.measureText(" ")).toInt())
+    return "$leftText$spaces$rightText"
+  }
+
+  fun drawStyledStroke(
+    canvas: Canvas,
+    startX: Float,
+    startY: Float,
+    endX: Float,
+    endY: Float,
+    strokeWidth: Float,
+    strokeColor: Int,
+    dashPattern: FloatArray? = null // Optional dash pattern
+  ) {
+    val paint = Paint().apply {
+      color = strokeColor
+      style = Paint.Style.STROKE
+      this.strokeWidth = strokeWidth
+      isAntiAlias = true
+
+      // Set dash effect if provided
+      dashPattern?.let {
+        pathEffect = DashPathEffect(it, 0f)
+      }
+    }
+
+    canvas.drawLine(startX, startY, endX, endY, paint)
   }
 }
