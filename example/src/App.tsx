@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import BlePrinter, { type Device } from 'react-native-ble-printer';
 import { DeviceItem } from './components/DeviceItem';
+import { printReceipt } from './services/printReceipt';
 
 export default function App() {
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
@@ -19,7 +20,7 @@ export default function App() {
 
   async function handlePrintReceipt() {
     try {
-      await BlePrinter.printText('Hello world!');
+      await printReceipt();
     } catch (error) {
       console.log(error);
     }

@@ -25,7 +25,7 @@ public class Utils {
       textSize = fontSize
       isAntiAlias = true
       typeface =
-        if (bold) Typeface.create(Typeface.DEFAULT, Typeface.BOLD) else Typeface.DEFAULT
+        if (bold) Typeface.create(Typeface.MONOSPACE, Typeface.BOLD) else Typeface.MONOSPACE
     }
 
     if(align != null) {
@@ -115,8 +115,8 @@ public class Utils {
       }
 
       val xPosition = when (alignment) {
-        "LEFT" -> xOffset
-        "RIGHT" -> xOffset + (width - textWidth).toInt()
+        "LEFT" -> xOffset + 10f
+        "RIGHT" -> xOffset + (width - textWidth).toInt() - 10f
         "CENTER" -> xOffset + ((width - textWidth) / 2).toInt()
         else -> throw IllegalArgumentException("Invalid alignment: $alignment")
       }
@@ -203,22 +203,43 @@ public class Utils {
     return lines
   }
 
-  fun twoColumns(
+  fun twoColumnsBitmap(
     leftText: String,
     rightText: String,
     bold: Boolean = false,
-    size: Float = 24f
-  ): String {
+    size: Float = 24f,
+  ): ByteArray {
+    val paperWidth = PAPER_WIDTH
     val paint = getPaint(bold = bold, fontSize = size)
+
+    // Calcula as larguras dos textos
     val leftWidth = paint.measureText(leftText)
     val rightWidth = paint.measureText(rightText)
 
-    // Calcula o espaço disponível entre os textos
-    val totalSpace = 374 - (leftWidth + rightWidth)
+    // Valida se o texto cabe no papel
+    if (leftWidth + rightWidth > paperWidth) {
+      throw IllegalArgumentException("Os textos são muito largos para caber na largura do papel.")
+    }
 
-    // Adiciona espaços entre os textos
-    val spaces = " ".repeat((totalSpace / paint.measureText(" ")).toInt())
-    return "$leftText$spaces$rightText"
+    // Calcula a posição da coluna da direita
+    val lineHeight = paint.fontMetrics.bottom - paint.fontMetrics.top
+    val bitmapHeight = lineHeight.toInt()
+
+    // Cria o bitmap
+    val bitmap = Bitmap.createBitmap(paperWidth.toInt(), bitmapHeight, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.drawColor(Color.WHITE)
+
+    // Desenha o texto da esquerda
+    val leftX = 0f
+    val leftY = -paint.fontMetrics.top
+    canvas.drawText(leftText, leftX + 10f, leftY, paint)
+
+    // Desenha o texto da direita
+    val rightX = paperWidth - rightWidth
+    canvas.drawText(rightText, rightX - 10f, leftY, paint)
+
+    return convertBitmapToPrinterArray(bitmap)
   }
 
   fun drawStyledStroke(

@@ -36,14 +36,14 @@ export async function printReceipt() {
     await BlePrinter.printStroke(20, 3);
     await BlePrinter.printColumns(
       ['ENTRADA', 'ATUAL', 'ANTERIOR'],
-      [124, 124, 124],
+      [128, 128, 128],
       ['LEFT', 'RIGHT', 'RIGHT'],
       { size: 20, bold: true }
     );
     await BlePrinter.printStroke(20, 3);
     await BlePrinter.printColumns(
       [entryTotal.toString(), entryTotal.toString()],
-      [250, 124],
+      [256, 128],
       ['RIGHT', 'RIGHT']
     );
     await BlePrinter.printText(entryTotal.toFixed(0), { align: 'RIGHT' });
@@ -51,14 +51,14 @@ export async function printReceipt() {
 
     await BlePrinter.printColumns(
       ['SAÍDA', 'ATUAL', 'ANTERIOR'],
-      [124, 124, 124],
+      [128, 128, 128],
       ['LEFT', 'RIGHT', 'RIGHT'],
       { size: 20, bold: true }
     );
     await BlePrinter.printStroke(20, 3);
     await BlePrinter.printColumns(
       [paymentTotal.toString(), paymentTotal.toString()],
-      [250, 124],
+      [250, 128],
       ['RIGHT', 'RIGHT']
     );
 
@@ -66,14 +66,14 @@ export async function printReceipt() {
     await BlePrinter.printStroke(20, 3);
     await BlePrinter.printColumns(
       ['TOTAL', 'SALDO', 'COMISSÃO'],
-      [124, 124, 124],
+      [128, 128, 128],
       ['LEFT', 'RIGHT', 'RIGHT'],
       { size: 20, bold: true }
     );
     await BlePrinter.printStroke(20, 3);
     await BlePrinter.printColumns(
       ['1000', '432', '432'],
-      [124, 124, 124],
+      [128, 128, 128],
       ['LEFT', 'RIGHT', 'RIGHT']
     );
 

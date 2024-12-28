@@ -233,8 +233,14 @@ class BlePrinterModule(reactContext: ReactApplicationContext) :
     size: Float = 24f,
     promise: Promise
   ) {
-    val text = Utils().twoColumns(leftText, rightText, bold, size)
-    printText(text, bold = bold, size = size, promise = promise)
+    val text = Utils().twoColumnsBitmap(leftText, rightText, bold, size)
+    val stream = getStream()
+    try {
+      stream?.write(text)
+      promise.resolve("Printed Text")
+    } catch (e: Exception) {
+      promise.resolve(e.message)
+    }
   }
 
   @ReactMethod
