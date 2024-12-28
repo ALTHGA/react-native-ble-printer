@@ -1,6 +1,6 @@
 {
   "name": "react-native-ble-printer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Print in thermal printer bluetooth",
   "source": "./src/index.tsx",
   "main": "./dist/commonjs/index.js",
@@ -8,7 +8,7 @@
   "types": "./dist/typescript/src/index.d.ts",
   "files": [
     "src",
-    "lib",
+    "dist",
     "android",
     "ios",
     "cpp",
@@ -30,7 +30,7 @@
     "test": "jest",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
+    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build dist",
     "prepare": "bob build",
     "release": "release-it"
   },
