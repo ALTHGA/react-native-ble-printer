@@ -25,7 +25,7 @@ public class Utils {
       textSize = fontSize
       isAntiAlias = true
       typeface =
-        if (bold) Typeface.create(Typeface.MONOSPACE, Typeface.BOLD) else Typeface.MONOSPACE
+        if (bold) Typeface.create(Typeface.DEFAULT, Typeface.BOLD) else Typeface.DEFAULT
     }
 
     if(align != null) {
