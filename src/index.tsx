@@ -1,8 +1,8 @@
 import {
-  DeviceEventEmitter,
-  type EmitterSubscription,
+  NativeEventEmitter,
   NativeModules,
   Platform,
+  type EmitterSubscription,
 } from 'react-native';
 import { BLE_PRINTER_EVENTS } from './enums/ble-printer-events';
 import type { Align } from './models/align.identify';
@@ -28,6 +28,9 @@ const BlePrinter = NativeModules.BlePrinter
         },
       }
     );
+
+const eventEmitter = new NativeEventEmitter(BlePrinter);
+
 function bluetoothIsEnabled(): Promise<boolean> {
   return BlePrinter.bluetoothIsEnabled();
 }
@@ -80,31 +83,66 @@ function disconnect(): Promise<void> {
   return BlePrinter.disconnect();
 }
 
+const normalizeDevice = (data: string): Device => {
+  let device;
+  try {
+    if (typeof data === 'string') {
+      device = JSON.parse(data);
+    } else {
+      device = data;
+    }
+  } catch (error) {
+    console.error('Failed to normalize device data:', error, data);
+    throw error;
+  }
+  return {
+    name: device.name || 'Unknown',
+    address: Platform.OS === 'ios' ? device.address : device.address,
+  };
+};
+
 function onDeviceFound(
   callback: (device: Device) => void
 ): EmitterSubscription {
-  return DeviceEventEmitter.addListener(
+  return eventEmitter.addListener(
     BLE_PRINTER_EVENTS.DEVICE_FOUND,
-    (device: string) => callback(JSON.parse(device))
+    (device: string) => {
+      const normalizedData = normalizeDevice(device);
+      if (normalizedData) {
+        callback(normalizedData);
+      } else {
+        console.warn(
+          `Invalid device data received for event ${BLE_PRINTER_EVENTS.DEVICE_FOUND}:`,
+          device
+        );
+      }
+    }
   );
 }
 
 function onDevicePaired(
   callback: (device: Device) => void
 ): EmitterSubscription {
-  return DeviceEventEmitter.addListener(
+  return eventEmitter.addListener(
     BLE_PRINTER_EVENTS.DEVICE_PAIRED,
-    (device: string) => callback(JSON.parse(device))
+    (device: string) => {
+      const normalizedData = normalizeDevice(device);
+      if (normalizedData) {
+        callback(normalizedData);
+      } else {
+        console.warn(
+          `Invalid device data received for event ${BLE_PRINTER_EVENTS.DEVICE_PAIRED}:`,
+          device
+        );
+      }
+    }
   );
 }
 
 function onDiscoveryFinished(
   callback: (listener: any) => void
 ): EmitterSubscription {
-  return DeviceEventEmitter.addListener(
-    BLE_PRINTER_EVENTS.DISCOVER_DONE,
-    callback
-  );
+  return eventEmitter.addListener(BLE_PRINTER_EVENTS.DISCOVER_DONE, callback);
 }
 
 export default {

@@ -47,6 +47,7 @@ export default function App() {
   }
 
   const handleDeviceFounds = (device: Device) => {
+    console.log('Devices', device);
     setFoundDevices((oldDevices) => [...oldDevices, device]);
   };
 
@@ -99,7 +100,7 @@ export default function App() {
         {foundDevices.map((device, i) => (
           <DeviceItem
             item={device}
-            isConnected={device.address === connectedDevice?.address}
+            isConnected={false}
             key={i}
             onConnectDevice={setConnectedDevice}
           />
@@ -119,7 +120,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
   },
   header: {
-    padding: 20,
+    paddingTop: 54,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',

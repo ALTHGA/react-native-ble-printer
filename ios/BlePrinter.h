@@ -1,6 +1,5 @@
-
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface BlePrinter : NSObject <RCTBridgeModule>
-
+@interface BlePrinter : RCTEventEmitter <RCTBridgeModule>
 @end
